@@ -187,14 +187,11 @@ The app will be available at `http://localhost:3000`.
 
 ## AI Usage Disclosure
 
-During this project, I used AI tools (Amazon Q) as a supporting resource — for understanding technical concepts, exploring implementation approaches, debugging issues, and speeding up boilerplate code like Express setup, Mongoose schemas, and Next.js UI components.
+During this project, I used Claude AI as supporting development tools to understand technical concepts, explore implementation approaches, troubleshoot errors, and assist with repetitive coding tasks such as Express.js setup, Mongoose schemas, and Next.js UI components.
 
-The core logic — circular dependency detection (DFS traversal), topological sort (Kahn's algorithm), and the booking DP (coin-change minimum bundles) — was designed and implemented by me. I reviewed, adapted, and worked to understand every part of the codebase rather than blindly copying generated output.
+I independently worked on the core problem-solving logic, including DFS-based circular dependency detection, Kahn's algorithm for topological sorting, and Dynamic Programming for minimum cinema bundle calculation.
+
+I reviewed, modified, tested, and worked to understand the code throughout the development process rather than relying on AI-generated output without verification. The final implementation reflects my development work and understanding of the project.
 
 ---
 
-## Developer
-
-Submitted for the **Blinto Talent Accelerator 2027 — Full-Stack Developer Internship Assessment**.
-
-GitHub: [github.com/Mahabubislam50725](https://github.com/Mahabubislam50725)

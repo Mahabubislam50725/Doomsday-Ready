@@ -1,6 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
-import { Ticket, Building2, Users, CheckCircle2 } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Ticket, Building2, Users, CheckCircle2, Plus } from "lucide-react";
 import { api } from "@/services/api";
 import BookingResult from "@/components/booking/BookingResult";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
@@ -10,21 +10,48 @@ import SearchableSelect from "@/components/common/SearchableSelect";
 
 export default function BookingPage() {
   const [cinemas, setCinemas] = useState([]);
+  const [loading, setLoading] = useState(true);
 
+  // Add Cinema form
+  const [form, setForm] = useState({ name: "", bundleSizes: "" });
+  const [formError, setFormError] = useState("");
+  const [formLoading, setFormLoading] = useState(false);
+
+  // Booking
   const [selectedCinema, setSelectedCinema] = useState("");
   const [groupSize, setGroupSize] = useState("");
   const [result, setResult] = useState(null);
   const [quoteError, setQuoteError] = useState("");
   const [quoteLoading, setQuoteLoading] = useState(false);
 
-  const fetchCinemas = async () => {
+  const fetchCinemas = useCallback(async () => {
     try {
       const data = await api.getCinemas();
       setCinemas(data.data);
     } catch {}
-  };
+    finally { setLoading(false); }
+  }, []);
 
-  useEffect(() => { fetchCinemas(); }, []);
+  useEffect(() => { fetchCinemas(); }, [fetchCinemas]);
+
+  const handleCreateCinema = async (e) => {
+    e.preventDefault();
+    setFormError("");
+    setFormLoading(true);
+    const sizes = form.bundleSizes
+      .split(",")
+      .map((s) => Number(s.trim()))
+      .filter((n) => !isNaN(n) && n > 0);
+    try {
+      await api.createCinema({ name: form.name, bundleSizes: sizes });
+      setForm({ name: "", bundleSizes: "" });
+      await fetchCinemas();
+    } catch (err) {
+      setFormError(err.message || "Failed to create cinema.");
+    } finally {
+      setFormLoading(false);
+    }
+  };
 
   const handleSelectCinema = (id) => {
     setSelectedCinema((prev) => prev === id ? "" : id);
@@ -53,11 +80,52 @@ export default function BookingPage() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-white">Plan Your Watch Party</h2>
-        <p className="text-zinc-500 text-sm mt-1">Find the minimum number of cinema bundles needed for your group.</p>
+        <h2 className="text-2xl font-bold text-white">Cinemas & Booking</h2>
+        <p className="text-zinc-500 text-sm mt-1">Manage cinemas and book your opening-night watch party.</p>
       </div>
 
-      {/* Cinema Cards — clickable to select */}
+      {/* Add Cinema Form */}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-zinc-800 flex items-center gap-2">
+          <Plus className="w-4 h-4 text-red-400" />
+          <h3 className="font-semibold text-zinc-200">Add New Cinema</h3>
+        </div>
+        <form onSubmit={handleCreateCinema} className="p-5 space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-zinc-500 uppercase tracking-wide mb-1.5 block">Cinema Name</label>
+              <input
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/30 transition-all placeholder:text-zinc-600"
+                placeholder="e.g. IMAX Cineplex"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <label className="text-xs text-zinc-500 uppercase tracking-wide mb-1.5 block">Bundle Sizes (comma-separated)</label>
+              <input
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/30 transition-all placeholder:text-zinc-600"
+                placeholder="e.g. 2, 5, 10"
+                value={form.bundleSizes}
+                onChange={(e) => setForm({ ...form, bundleSizes: e.target.value })}
+                required
+              />
+            </div>
+          </div>
+          <ErrorMessage message={formError} onDismiss={() => setFormError("")} />
+          <button
+            type="submit"
+            disabled={formLoading}
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-red-900/30"
+          >
+            {formLoading ? <LoadingSpinner size="sm" /> : <Plus className="w-4 h-4" />}
+            Add Cinema
+          </button>
+        </form>
+      </div>
+
+      {/* Cinema Cards */}
       <div>
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold text-zinc-200 flex items-center gap-2">
@@ -74,12 +142,10 @@ export default function BookingPage() {
           )}
         </div>
 
-        {cinemas.length === 0 ? (
-          <EmptyState
-            icon="🎭"
-            title="No cinemas yet"
-            description="Add a cinema above to get started."
-          />
+        {loading ? (
+          <div className="py-12"><LoadingSpinner size="lg" text="Loading cinemas..." /></div>
+        ) : cinemas.length === 0 ? (
+          <EmptyState icon="🎭" title="No cinemas yet" description="Add your first cinema above." />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {cinemas.map((c) => {
@@ -94,7 +160,6 @@ export default function BookingPage() {
                       : "border-zinc-800 hover:border-zinc-700"
                   }`}
                 >
-                  {/* Cinema name row */}
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
@@ -106,12 +171,8 @@ export default function BookingPage() {
                         {c.name}
                       </p>
                     </div>
-                    {isSelected && (
-                      <CheckCircle2 className="w-5 h-5 text-red-400 flex-shrink-0" />
-                    )}
+                    {isSelected && <CheckCircle2 className="w-5 h-5 text-red-400 flex-shrink-0" />}
                   </div>
-
-                  {/* Bundle size chips */}
                   <div className="flex flex-wrap gap-1.5">
                     {c.bundleSizes.map((s) => (
                       <span
@@ -126,8 +187,6 @@ export default function BookingPage() {
                       </span>
                     ))}
                   </div>
-
-                  {/* Select hint */}
                   <p className={`text-xs ${isSelected ? "text-red-400 font-medium" : "text-zinc-600"}`}>
                     {isSelected ? "✓ Selected — enter group size below" : "Click to select"}
                   </p>
@@ -145,8 +204,6 @@ export default function BookingPage() {
           <h3 className="font-semibold text-zinc-200">Get Booking Quote</h3>
         </div>
         <div className="p-5 space-y-4">
-
-          {/* Searchable cinema selector */}
           <div>
             <label className="text-xs text-zinc-500 uppercase tracking-wide mb-1.5 block">Cinema</label>
             <SearchableSelect
@@ -161,7 +218,6 @@ export default function BookingPage() {
             />
           </div>
 
-          {/* Selected cinema bundle info */}
           {activeCinema && (
             <div className="flex items-center gap-3 bg-red-950/20 border border-red-800/30 rounded-xl px-4 py-3">
               <Building2 className="w-4 h-4 text-red-400 flex-shrink-0" />
@@ -172,7 +228,6 @@ export default function BookingPage() {
             </div>
           )}
 
-          {/* Group size input */}
           <div>
             <label className="text-xs text-zinc-500 uppercase tracking-wide mb-1.5 block">Group Size (1–10,000)</label>
             <input
@@ -198,11 +253,7 @@ export default function BookingPage() {
           </button>
 
           {result && (
-            <BookingResult
-              result={result}
-              groupSize={groupSize}
-              cinemaName={activeCinema?.name}
-            />
+            <BookingResult result={result} groupSize={groupSize} cinemaName={activeCinema?.name} />
           )}
         </div>
       </div>

@@ -5,16 +5,14 @@ import { Menu, User } from "lucide-react";
 const titles = {
   "/movies": "My Movies",
   "/rewatch-plan": "Rewatch Plan",
-  "/cinemas": "Cinemas",
-  "/booking": "Cinema Booking",
+  "/booking": "Cinemas & Booking",
   "/": "My Movies",
 };
 
 const subtitles = {
   "/movies": "Manage your MCU collection",
   "/rewatch-plan": "Plan your ultimate rewatch",
-  "/cinemas": "Manage cinemas and bundle sizes",
-  "/booking": "Book your opening-night watch party",
+  "/booking": "Manage cinemas and book your watch party",
   "/": "Manage your MCU collection",
 };
 
