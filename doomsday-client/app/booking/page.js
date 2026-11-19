@@ -1,10 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Ticket, Plus, Building2, Users } from "lucide-react";
+import { Ticket, Plus, Building2, Users, CheckCircle2 } from "lucide-react";
 import { api } from "@/services/api";
 import BookingResult from "@/components/booking/BookingResult";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 import ErrorMessage from "@/components/common/ErrorMessage";
+import EmptyState from "@/components/common/EmptyState";
 
 export default function BookingPage() {
   const [cinemas, setCinemas] = useState([]);
@@ -44,6 +45,12 @@ export default function BookingPage() {
     } finally {
       setCinemaLoading(false);
     }
+  };
+
+  const handleSelectCinema = (id) => {
+    setSelectedCinema((prev) => prev === id ? "" : id);
+    setResult(null);
+    setQuoteError("");
   };
 
   const handleQuote = async () => {
@@ -112,26 +119,86 @@ export default function BookingPage() {
         </form>
       </div>
 
-      {/* Cinema Cards */}
-      {cinemas.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {cinemas.map((c) => (
-            <div key={c._id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 space-y-2.5">
-              <div className="flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-zinc-500 flex-shrink-0" />
-                <p className="font-semibold text-white truncate">{c.name}</p>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {c.bundleSizes.map((s) => (
-                  <span key={s} className="bg-zinc-800 border border-zinc-700 text-zinc-400 text-xs px-2.5 py-1 rounded-full">
-                    {s} seats
-                  </span>
-                ))}
-              </div>
-            </div>
-          ))}
+      {/* Cinema Cards — clickable to select */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold text-zinc-200 flex items-center gap-2">
+            <Building2 className="w-4 h-4 text-red-400" />
+            Select a Cinema
+          </h3>
+          {selectedCinema && (
+            <button
+              onClick={() => { setSelectedCinema(""); setResult(null); }}
+              className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+            >
+              Clear selection
+            </button>
+          )}
         </div>
-      )}
+
+        {cinemas.length === 0 ? (
+          <EmptyState
+            icon="🎭"
+            title="No cinemas yet"
+            description="Add a cinema above to get started."
+          />
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {cinemas.map((c) => {
+              const isSelected = selectedCinema === c._id;
+              return (
+                <button
+                  key={c._id}
+                  onClick={() => handleSelectCinema(c._id)}
+                  className={`text-left bg-zinc-900 border rounded-2xl p-4 space-y-3 transition-all duration-200 hover:shadow-lg hover:shadow-black/40 ${
+                    isSelected
+                      ? "border-red-500/60 ring-1 ring-red-500/30 bg-red-950/10"
+                      : "border-zinc-800 hover:border-zinc-700"
+                  }`}
+                >
+                  {/* Cinema name row */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                        isSelected ? "bg-red-600/20 border border-red-500/30" : "bg-zinc-800 border border-zinc-700"
+                      }`}>
+                        <Building2 className={`w-4 h-4 ${isSelected ? "text-red-400" : "text-zinc-500"}`} />
+                      </div>
+                      <p className={`font-semibold truncate ${isSelected ? "text-white" : "text-zinc-300"}`}>
+                        {c.name}
+                      </p>
+                    </div>
+                    {isSelected && (
+                      <CheckCircle2 className="w-5 h-5 text-red-400 flex-shrink-0" />
+                    )}
+                  </div>
+
+                  {/* Bundle size chips */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {c.bundleSizes.map((s) => (
+                      <span
+                        key={s}
+                        className={`text-xs px-2.5 py-1 rounded-full border ${
+                          isSelected
+                            ? "bg-red-600/10 border-red-500/30 text-red-300"
+                            : "bg-zinc-800 border-zinc-700 text-zinc-400"
+                        }`}
+                      >
+                        {s} seats
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Select hint */}
+                  <p className={`text-xs ${isSelected ? "text-red-400 font-medium" : "text-zinc-600"}`}>
+                    {isSelected ? "✓ Selected — enter group size below" : "Click to select"}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* Booking Quote */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
@@ -140,40 +207,38 @@ export default function BookingPage() {
           <h3 className="font-semibold text-zinc-200">Get Booking Quote</h3>
         </div>
         <div className="p-5 space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-zinc-500 uppercase tracking-wide mb-1.5 block">Cinema</label>
-              <select
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/30 transition-all"
-                value={selectedCinema}
-                onChange={(e) => { setSelectedCinema(e.target.value); setResult(null); setQuoteError(""); }}
-              >
-                <option value="">Select a cinema...</option>
-                {cinemas.map((c) => (
-                  <option key={c._id} value={c._id}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs text-zinc-500 uppercase tracking-wide mb-1.5 block">Group Size (1–10,000)</label>
-              <input
-                type="number"
-                min="1"
-                max="10000"
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/30 transition-all placeholder:text-zinc-600"
-                placeholder="e.g. 11"
-                value={groupSize}
-                onChange={(e) => { setGroupSize(e.target.value); setResult(null); setQuoteError(""); }}
-              />
-            </div>
-          </div>
 
-          {activeCinema && (
-            <p className="text-xs text-zinc-600 flex items-center gap-1.5">
-              <Ticket className="w-3 h-3" />
-              Available bundles: {activeCinema.bundleSizes.map((s) => `${s} seats`).join(", ")}
-            </p>
+          {/* Selected cinema info */}
+          {activeCinema ? (
+            <div className="flex items-center gap-3 bg-red-950/20 border border-red-800/30 rounded-xl px-4 py-3">
+              <Building2 className="w-4 h-4 text-red-400 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate">{activeCinema.name}</p>
+                <p className="text-xs text-zinc-500 mt-0.5">
+                  Bundles: {activeCinema.bundleSizes.join(", ")} seats
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 bg-zinc-800/40 border border-zinc-700/40 rounded-xl px-4 py-3">
+              <Building2 className="w-4 h-4 text-zinc-600 flex-shrink-0" />
+              <p className="text-sm text-zinc-500">Select a cinema above first</p>
+            </div>
           )}
+
+          {/* Group size input */}
+          <div>
+            <label className="text-xs text-zinc-500 uppercase tracking-wide mb-1.5 block">Group Size (1–10,000)</label>
+            <input
+              type="number"
+              min="1"
+              max="10000"
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/30 transition-all placeholder:text-zinc-600"
+              placeholder="e.g. 11"
+              value={groupSize}
+              onChange={(e) => { setGroupSize(e.target.value); setResult(null); setQuoteError(""); }}
+            />
+          </div>
 
           <ErrorMessage message={quoteError} onDismiss={() => setQuoteError("")} />
 
