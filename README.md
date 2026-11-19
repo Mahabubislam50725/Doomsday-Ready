@@ -1,112 +1,199 @@
 # ☢ Doomsday Ready
 
-A full-stack app to help MCU fans plan their rewatch before **Avengers: Doomsday** and book an opening-night watch party.
+**Full-Stack Developer Internship Assessment — Blinto Talent Accelerator 2027**
 
 ---
 
-## Data Model Diagram
+## About the Project
 
-```
-┌─────────────────────────────────────┐
-│               Movie                 │
-├─────────────────────────────────────┤
-│ _id          ObjectId (PK)          │
-│ title        String (unique)        │
-│ releaseYear  Number (1–3000)        │
-│ runtime      Number (1–300 min)     │
-│ prerequisites [ObjectId] → Movie[]  │  self-referential (DAG, no cycles)
-│ watched      Boolean (default false)│
-│ createdAt    Date                   │
-│ updatedAt    Date                   │
-└─────────────────────────────────────┘
-         │ prerequisites (many-to-many self-ref)
-         └──────────────────────────────┐
-                                        ▼
-                                    Movie (same collection)
+Doomsday Ready is a full-stack web application built for the Blinto Talent Accelerator 2027 internship assessment.
 
-┌─────────────────────────────────────┐
-│               Cinema                │
-├─────────────────────────────────────┤
-│ _id          ObjectId (PK)          │
-│ name         String (unique)        │
-│ bundleSizes  Number[] (1–10 items,  │
-│              each 1–500, unique)    │
-│ createdAt    Date                   │
-│ updatedAt    Date                   │
-└─────────────────────────────────────┘
-```
+With **Avengers: Doomsday** on the horizon, many Marvel fans want to rewatch the MCU films in the right order before opening night. This app helps them do exactly that — plan their rewatch journey and book a cinema watch party with friends.
 
-Movies and Cinemas are independent — no foreign key between them.
+It has two main purposes:
 
----
-
-## Tech Stack
-
-| Layer    | Technology                        |
-|----------|-----------------------------------|
-| Backend  | Node.js, Express 5, MongoDB Atlas |
-| Frontend | Next.js 16, React 19, Tailwind 4  |
+- **Rewatch Planning** — Add MCU movies, set prerequisites, and get a correct watch order using topological sort.
+- **Cinema Booking** — Add cinemas with seat bundle sizes and calculate the minimum number of bundles needed for any group size.
 
 ---
 
 ## Features
 
-### Feature 1 — Movies & Rewatch Order
-- Create / list / update movies (title, year, runtime, prerequisites, watched)
-- Circular dependency detection using DFS — returns `409 CIRCULAR_DEPENDENCY`
-- Rewatch order via **Kahn's topological sort** (BFS-based) on the prerequisite DAG
-- Returns watched count and total unwatched runtime
+### 🎬 Movies
+- Add, view, and update movies (title, release year, runtime, watched status).
+- Set prerequisite movies that must be watched first.
+- Mark movies as watched or unwatched.
+- Circular dependency detection — if adding a prerequisite would create a cycle, the API returns `409 CIRCULAR_DEPENDENCY`.
 
-### Feature 2 — Cinemas & Watch-Party Booking
-- Create / list cinemas with bundle sizes
-- Booking quote via **bottom-up dynamic programming** (coin-change variant) — finds the minimum number of bundles that sum exactly to the group size, or reports "not possible"
+### 📋 Rewatch Plan
+- Select any movie as your target.
+- Get all prerequisite movies in the correct watch order (Kahn's topological sort).
+- See how many movies you have already watched.
+- See the total remaining watch time for unwatched movies.
 
-### Feature 3 — Frontend (Next.js)
-1. **Movies** — add movies, edit prerequisites inline, tick as watched
-2. **Rewatch Plan** — pick target movie, see ordered list, progress bar, remaining time
-3. **Booking** — add cinemas, pick cinema + group size, see bundle breakdown
-
----
-
-## API Reference
-
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/api/movies` | Create movie |
-| GET | `/api/movies` | List movies |
-| PATCH | `/api/movies/:id` | Update movie |
-| GET | `/api/movies/:id/rewatch-order` | Rewatch order |
-| POST | `/api/cinemas` | Create cinema |
-| GET | `/api/cinemas` | List cinemas |
-| GET | `/api/cinemas/:id/booking?groupSize=N` | Booking quote |
+### 🎟 Cinema Booking
+- Add cinemas with their available seat bundle sizes.
+- Enter a group size and get the minimum number of bundles needed to fill it exactly.
+- If no exact combination is possible, the app clearly shows **Not Possible**.
+- Uses a bottom-up dynamic programming approach (coin-change variant).
 
 ---
 
-## Setup
+## Technology Stack
+
+| Layer     | Technology                              |
+|-----------|-----------------------------------------|
+| Frontend  | Next.js 16, React 19, Tailwind CSS 4   |
+| Backend   | Node.js, Express 5                      |
+| Database  | MongoDB Atlas, Mongoose 9               |
+| Language  | JavaScript (ES6+)                       |
+| API Style | REST API                                |
+| Version Control | Git, GitHub                      |
+
+---
+
+## Project Structure
+
+```
+Doomsday-Ready/
+├── doomsday-client/        # Next.js frontend
+│   ├── app/
+│   │   ├── movies/
+│   │   ├── rewatch-plan/
+│   │   └── booking/
+│   ├── components/
+│   │   ├── layout/
+│   │   ├── movies/
+│   │   ├── rewatch/
+│   │   ├── booking/
+│   │   └── common/
+│   └── services/
+│       ├── api.js
+│       └── tmdb.js
+├── doomsday-server/        # Express backend
+│   ├── controllers/
+│   ├── models/
+│   ├── routes/
+│   └── config/
+└── README.md
+```
+
+---
+
+## Database Design
+
+```mermaid
+erDiagram
+    MOVIE {
+        ObjectId _id PK
+        String   title
+        Number   releaseYear
+        Number   runtime
+        Boolean  watched
+        Date     createdAt
+        Date     updatedAt
+    }
+
+    CINEMA {
+        ObjectId  _id PK
+        String    name
+        Number[]  bundleSizes
+        Date      createdAt
+        Date      updatedAt
+    }
+
+    MOVIE ||--o{ MOVIE : "prerequisites (self-ref)"
+```
+
+> Movies and Cinemas are independent collections — there is no foreign key between them.
+>
+> A Movie's `prerequisites` field holds an array of ObjectIds referencing other documents in the same Movie collection, forming a directed acyclic graph (DAG).
+
+---
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/movies` | Create a new movie |
+| `GET` | `/api/movies` | List all movies |
+| `PATCH` | `/api/movies/:id` | Update a movie |
+| `GET` | `/api/movies/:id/rewatch-order` | Get topological watch order |
+| `POST` | `/api/cinemas` | Create a new cinema |
+| `GET` | `/api/cinemas` | List all cinemas |
+| `GET` | `/api/cinemas/:id/booking?groupSize=6` | Get minimum bundle booking quote |
+
+---
+
+## Installation & Setup
 
 ### Prerequisites
 - Node.js 18+
-- MongoDB Atlas URI (or local MongoDB)
+- A MongoDB Atlas URI (or local MongoDB instance)
 
-### Backend
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/Mahabubislam50725/Doomsday-Ready.git
+cd Doomsday-Ready
+```
+
+### 2. Backend setup
+
 ```bash
 cd doomsday-server
 npm install
-# create .env with PORT=5000 and MONGO_URI=...
+```
+
+Create a `.env` file inside `doomsday-server/`:
+
+```env
+PORT=5000
+MONGO_URI=your_mongodb_atlas_uri_here
+```
+
+Start the server:
+
+```bash
 npm run dev
 ```
 
-### Frontend
+The API will be available at `http://localhost:5000`.
+
+### 3. Frontend setup
+
 ```bash
-cd doomsday-client
+cd ../doomsday-client
 npm install
-npm run dev
-# opens at http://localhost:3000
 ```
+
+Create a `.env.local` file inside `doomsday-client/`:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:5000/api
+NEXT_PUBLIC_TMDB_KEY=your_tmdb_api_key_here
+```
+
+Start the frontend:
+
+```bash
+npm run dev
+```
+
+The app will be available at `http://localhost:3000`.
 
 ---
 
-## How I Used AI
+## AI Usage Disclosure
 
-- **Amazon Q (IDE)** — used to scaffold boilerplate (Express setup, Mongoose schemas, Next.js layout/nav), generate Tailwind UI components, and write file contents faster.
-- **Logic written manually** — the circular dependency check (DFS traversal), topological sort (Kahn's algorithm), and booking DP (coin-change minimum bundles) were designed and implemented by me without any library solving them.
+During this project, I used AI tools (Amazon Q) as a supporting resource — for understanding technical concepts, exploring implementation approaches, debugging issues, and speeding up boilerplate code like Express setup, Mongoose schemas, and Next.js UI components.
+
+The core logic — circular dependency detection (DFS traversal), topological sort (Kahn's algorithm), and the booking DP (coin-change minimum bundles) — was designed and implemented by me. I reviewed, adapted, and worked to understand every part of the codebase rather than blindly copying generated output.
+
+---
+
+## Developer
+
+Submitted for the **Blinto Talent Accelerator 2027 — Full-Stack Developer Internship Assessment**.
+
+GitHub: [github.com/Mahabubislam50725](https://github.com/Mahabubislam50725)
