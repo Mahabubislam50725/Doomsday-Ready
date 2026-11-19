@@ -1,6 +1,15 @@
+"use client";
+import { useState, useEffect } from "react";
 import { Clock, Calendar, CheckCircle2, Circle, Pencil, Zap, Film } from "lucide-react";
+import { fetchMoviePoster } from "@/services/tmdb";
 
 export default function MovieCard({ movie, onToggleWatched, onEditPrereqs }) {
+  const [poster, setPoster] = useState(null);
+
+  useEffect(() => {
+    fetchMoviePoster(movie.title, movie.releaseYear).then(setPoster);
+  }, [movie.title, movie.releaseYear]);
+
   const hrs = Math.floor(movie.runtime / 60);
   const mins = movie.runtime % 60;
   const runtimeLabel = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
@@ -11,50 +20,55 @@ export default function MovieCard({ movie, onToggleWatched, onEditPrereqs }) {
         ? "border-zinc-800/40 opacity-75 hover:opacity-100"
         : "border-zinc-800 hover:border-zinc-700"
     }`}>
-      {/* Accent bar */}
-      <div className={`h-1 w-full flex-shrink-0 ${
-        movie.watched
-          ? "bg-green-600"
-          : "bg-gradient-to-r from-red-600 via-red-500 to-orange-500"
-      }`} />
-
-      <div className="p-5 flex flex-col gap-4 flex-1">
-
-        {/* ── Row 1: Icon + Title + Status badge ── */}
-        <div className="flex items-start gap-3">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-            movie.watched ? "bg-green-500/10 border border-green-500/20" : "bg-red-500/10 border border-red-500/20"
-          }`}>
-            <Film className={`w-5 h-5 ${movie.watched ? "text-green-400" : "text-red-400"}`} />
+      {/* Poster */}
+      <div className="relative w-full h-52 bg-zinc-800 flex-shrink-0 overflow-hidden">
+        {poster ? (
+          <img
+            src={poster}
+            alt={movie.title}
+            className={`w-full h-full object-cover transition-all duration-300 ${movie.watched ? "grayscale-[40%]" : ""}`}
+          />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+            <Film className="w-10 h-10 text-zinc-700" />
+            <p className="text-zinc-600 text-xs">No poster</p>
           </div>
-          <div className="flex-1 min-w-0">
-            <h3 className={`font-bold text-base leading-snug ${
-              movie.watched ? "line-through text-zinc-500" : "text-white"
-            }`}>
-              {movie.title}
-            </h3>
-            <p className="text-zinc-500 text-xs mt-0.5">MCU Film</p>
-          </div>
-          <span className={`flex-shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full border ${
+        )}
+
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/20 to-transparent" />
+
+        {/* Watched badge on poster */}
+        <div className="absolute top-3 right-3">
+          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border backdrop-blur-sm ${
             movie.watched
-              ? "bg-green-500/10 text-green-400 border-green-500/20"
-              : "bg-zinc-800 text-zinc-500 border-zinc-700"
+              ? "bg-green-500/20 text-green-400 border-green-500/30"
+              : "bg-zinc-900/70 text-zinc-400 border-zinc-700/60"
           }`}>
             {movie.watched ? "✓ Watched" : "Unwatched"}
           </span>
         </div>
 
-        {/* ── Row 2: Meta info chips ── */}
+        {/* Title on poster bottom */}
+        <div className="absolute bottom-0 left-0 right-0 px-4 pb-3">
+          <h3 className={`font-bold text-base leading-snug ${movie.watched ? "line-through text-zinc-400" : "text-white"}`}>
+            {movie.title}
+          </h3>
+        </div>
+      </div>
+
+      <div className="p-4 flex flex-col gap-3 flex-1">
+        {/* Meta chips */}
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-1.5 bg-zinc-800 border border-zinc-700/60 rounded-lg px-3 py-1.5">
+          <div className="flex items-center gap-1.5 bg-zinc-800 border border-zinc-700/60 rounded-lg px-2.5 py-1.5">
             <Calendar className="w-3.5 h-3.5 text-zinc-500" />
             <span className="text-zinc-300 text-xs font-medium">{movie.releaseYear}</span>
           </div>
-          <div className="flex items-center gap-1.5 bg-zinc-800 border border-zinc-700/60 rounded-lg px-3 py-1.5">
+          <div className="flex items-center gap-1.5 bg-zinc-800 border border-zinc-700/60 rounded-lg px-2.5 py-1.5">
             <Clock className="w-3.5 h-3.5 text-zinc-500" />
             <span className="text-zinc-300 text-xs font-medium">{runtimeLabel}</span>
           </div>
-          <div className="flex items-center gap-1.5 bg-zinc-800 border border-zinc-700/60 rounded-lg px-3 py-1.5">
+          <div className="flex items-center gap-1.5 bg-zinc-800 border border-zinc-700/60 rounded-lg px-2.5 py-1.5">
             <Zap className="w-3.5 h-3.5 text-zinc-500" />
             <span className="text-zinc-300 text-xs font-medium">
               {movie.prerequisites?.length > 0
@@ -64,16 +78,13 @@ export default function MovieCard({ movie, onToggleWatched, onEditPrereqs }) {
           </div>
         </div>
 
-        {/* ── Row 3: Prerequisites list ── */}
+        {/* Prerequisites */}
         {movie.prerequisites?.length > 0 && (
           <div className="bg-zinc-800/40 border border-zinc-700/40 rounded-xl px-3 py-2.5 space-y-1.5">
             <p className="text-zinc-600 text-xs font-semibold uppercase tracking-wide">Watch First</p>
             <div className="flex flex-wrap gap-1.5">
               {movie.prerequisites.map((p) => (
-                <span
-                  key={p._id || p}
-                  className="bg-zinc-800 border border-zinc-700 text-zinc-400 text-xs px-2.5 py-1 rounded-full"
-                >
+                <span key={p._id || p} className="bg-zinc-800 border border-zinc-700 text-zinc-400 text-xs px-2.5 py-1 rounded-full">
                   {p.title || p}
                 </span>
               ))}
@@ -81,7 +92,7 @@ export default function MovieCard({ movie, onToggleWatched, onEditPrereqs }) {
           </div>
         )}
 
-        {/* ── Row 4: Actions ── */}
+        {/* Action buttons */}
         <div className="flex gap-2 mt-auto pt-1">
           <button
             onClick={() => onToggleWatched(movie)}
@@ -92,14 +103,13 @@ export default function MovieCard({ movie, onToggleWatched, onEditPrereqs }) {
             }`}
           >
             {movie.watched
-              ? <><Circle className="w-4 h-4" /> Mark Unwatched</>
-              : <><CheckCircle2 className="w-4 h-4" /> Mark Watched</>
+              ? <><Circle className="w-4 h-4" /> Unwatched</>
+              : <><CheckCircle2 className="w-4 h-4" /> Watched</>
             }
           </button>
           <button
             onClick={() => onEditPrereqs(movie)}
             className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-zinc-600 text-zinc-400 hover:text-white transition-all"
-            title="Edit movie"
           >
             <Pencil className="w-4 h-4" />
             Edit
