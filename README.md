@@ -85,29 +85,30 @@ Doomsday-Ready/
 ```mermaid
 erDiagram
     MOVIE {
-        ObjectId _id PK
-        String   title
-        Number   releaseYear
-        Number   runtime
-        Boolean  watched
-        Date     createdAt
-        Date     updatedAt
+        ObjectId   _id          PK
+        String     title
+        Number     releaseYear
+        Number     runtime
+        ObjectId[] prerequisites FK
+        Boolean    watched
+        Date       createdAt
+        Date       updatedAt
     }
 
     CINEMA {
-        ObjectId  _id PK
+        ObjectId  _id         PK
         String    name
         Number[]  bundleSizes
         Date      createdAt
         Date      updatedAt
     }
 
-    MOVIE ||--o{ MOVIE : "prerequisites (self-ref)"
+    MOVIE ||--o{ MOVIE : "prerequisites"
 ```
 
-> Movies and Cinemas are independent collections — there is no foreign key between them.
+> Movies and Cinemas are **independent collections** — there is no relationship between them.
 >
-> A Movie's `prerequisites` field holds an array of ObjectIds referencing other documents in the same Movie collection, forming a directed acyclic graph (DAG).
+> A Movie's `prerequisites` field is an array of ObjectIds that reference other documents in the same Movie collection, forming a **directed acyclic graph (DAG)**. Adding a prerequisite that creates a cycle returns `409 CIRCULAR_DEPENDENCY`.
 
 ---
 
