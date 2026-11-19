@@ -6,6 +6,7 @@ import BookingResult from "@/components/booking/BookingResult";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 import ErrorMessage from "@/components/common/ErrorMessage";
 import EmptyState from "@/components/common/EmptyState";
+import SearchableSelect from "@/components/common/SearchableSelect";
 
 export default function BookingPage() {
   const [cinemas, setCinemas] = useState([]);
@@ -208,21 +209,29 @@ export default function BookingPage() {
         </div>
         <div className="p-5 space-y-4">
 
-          {/* Selected cinema info */}
-          {activeCinema ? (
+          {/* Searchable cinema selector */}
+          <div>
+            <label className="text-xs text-zinc-500 uppercase tracking-wide mb-1.5 block">Cinema</label>
+            <SearchableSelect
+              options={cinemas.map((c) => ({
+                value: c._id,
+                label: c.name,
+                sub: c.bundleSizes.join(", ") + " seats",
+              }))}
+              value={selectedCinema}
+              onChange={(val) => { setSelectedCinema(val); setResult(null); setQuoteError(""); }}
+              placeholder="Search and select a cinema..."
+            />
+          </div>
+
+          {/* Selected cinema bundle info */}
+          {activeCinema && (
             <div className="flex items-center gap-3 bg-red-950/20 border border-red-800/30 rounded-xl px-4 py-3">
               <Building2 className="w-4 h-4 text-red-400 flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-white truncate">{activeCinema.name}</p>
-                <p className="text-xs text-zinc-500 mt-0.5">
-                  Bundles: {activeCinema.bundleSizes.join(", ")} seats
-                </p>
+                <p className="text-xs text-zinc-500 mt-0.5">Bundles: {activeCinema.bundleSizes.join(", ")} seats</p>
               </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3 bg-zinc-800/40 border border-zinc-700/40 rounded-xl px-4 py-3">
-              <Building2 className="w-4 h-4 text-zinc-600 flex-shrink-0" />
-              <p className="text-sm text-zinc-500">Select a cinema above first</p>
             </div>
           )}
 
