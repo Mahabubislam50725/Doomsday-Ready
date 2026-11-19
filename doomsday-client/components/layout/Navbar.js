@@ -5,6 +5,7 @@ import { Menu, User } from "lucide-react";
 const titles = {
   "/movies": "My Movies",
   "/rewatch-plan": "Rewatch Plan",
+  "/cinemas": "Cinemas",
   "/booking": "Cinema Booking",
   "/": "My Movies",
 };
@@ -12,6 +13,7 @@ const titles = {
 const subtitles = {
   "/movies": "Manage your MCU collection",
   "/rewatch-plan": "Plan your ultimate rewatch",
+  "/cinemas": "Manage cinemas and bundle sizes",
   "/booking": "Book your opening-night watch party",
   "/": "Manage your MCU collection",
 };

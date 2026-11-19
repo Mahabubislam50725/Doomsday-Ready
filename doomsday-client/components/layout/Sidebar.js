@@ -1,11 +1,12 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Film, ListOrdered, Ticket, X } from "lucide-react";
+import { Film, ListOrdered, Ticket, Building2, X } from "lucide-react";
 
 const navItems = [
   { href: "/movies", label: "Movies", icon: Film },
   { href: "/rewatch-plan", label: "Rewatch Plan", icon: ListOrdered },
+  { href: "/cinemas", label: "Cinemas", icon: Building2 },
   { href: "/booking", label: "Cinema Booking", icon: Ticket },
 ];
 
