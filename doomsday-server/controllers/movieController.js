@@ -135,7 +135,7 @@ const getRewatchOrder = async (req, res) => {
     if (!target) return res.status(404).json({ success: false, message: "Movie not found" });
 
     // BFS to collect all transitive prerequisite nodes
-    const allMovies = await Movie.find().select("_id title runtime watched prerequisites").lean();
+    const allMovies = await Movie.find().select("_id title releaseYear runtime watched prerequisites").lean();
     const movieMap = {};
     for (const m of allMovies) movieMap[m._id.toString()] = m;
 
@@ -198,7 +198,7 @@ const getRewatchOrder = async (req, res) => {
     return res.status(200).json({
       success: true,
       data: {
-        order: order.map(({ _id, title, runtime, watched }) => ({ _id, title, runtime, watched })),
+        order: order.map(({ _id, title, releaseYear, runtime, watched }) => ({ _id, title, releaseYear, runtime, watched })),
         watchedCount,
         unwatchedRuntime,
       },

@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Film, ListOrdered, Ticket, LayoutDashboard, X } from "lucide-react";
+import { Film, ListOrdered, Ticket, X } from "lucide-react";
 
 const navItems = [
   { href: "/movies", label: "Movies", icon: Film },
