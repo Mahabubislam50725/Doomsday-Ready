@@ -1,21 +1,28 @@
 "use client";
 import { useState, useEffect } from "react";
-
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+import { Ticket, Plus, Building2, Users } from "lucide-react";
+import { api } from "@/services/api";
+import BookingResult from "@/components/booking/BookingResult";
+import LoadingSpinner from "@/components/common/LoadingSpinner";
+import ErrorMessage from "@/components/common/ErrorMessage";
 
 export default function BookingPage() {
   const [cinemas, setCinemas] = useState([]);
   const [cinemaForm, setCinemaForm] = useState({ name: "", bundleSizes: "" });
+  const [cinemaError, setCinemaError] = useState("");
+  const [cinemaLoading, setCinemaLoading] = useState(false);
+
   const [selectedCinema, setSelectedCinema] = useState("");
   const [groupSize, setGroupSize] = useState("");
   const [result, setResult] = useState(null);
-  const [error, setError] = useState("");
-  const [cinemaError, setCinemaError] = useState("");
+  const [quoteError, setQuoteError] = useState("");
+  const [quoteLoading, setQuoteLoading] = useState(false);
 
   const fetchCinemas = async () => {
-    const res = await fetch(`${API}/cinemas`);
-    const data = await res.json();
-    if (data.success) setCinemas(data.data);
+    try {
+      const data = await api.getCinemas();
+      setCinemas(data.data);
+    } catch {}
   };
 
   useEffect(() => { fetchCinemas(); }, []);
@@ -23,33 +30,35 @@ export default function BookingPage() {
   const handleCreateCinema = async (e) => {
     e.preventDefault();
     setCinemaError("");
+    setCinemaLoading(true);
     const sizes = cinemaForm.bundleSizes
       .split(",")
       .map((s) => Number(s.trim()))
       .filter((n) => !isNaN(n) && n > 0);
-
-    const res = await fetch(`${API}/cinemas`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: cinemaForm.name, bundleSizes: sizes }),
-    });
-    const data = await res.json();
-    if (data.success) {
+    try {
+      await api.createCinema({ name: cinemaForm.name, bundleSizes: sizes });
       setCinemaForm({ name: "", bundleSizes: "" });
-      fetchCinemas();
-    } else {
-      setCinemaError(data.message);
+      await fetchCinemas();
+    } catch (err) {
+      setCinemaError(err.message || "Failed to create cinema.");
+    } finally {
+      setCinemaLoading(false);
     }
   };
 
   const handleQuote = async () => {
     if (!selectedCinema || !groupSize) return;
-    setError("");
+    setQuoteError("");
     setResult(null);
-    const res = await fetch(`${API}/cinemas/${selectedCinema}/booking?groupSize=${groupSize}`);
-    const data = await res.json();
-    if (data.success) setResult(data.data);
-    else setError(data.message);
+    setQuoteLoading(true);
+    try {
+      const data = await api.getBookingQuote(selectedCinema, groupSize);
+      setResult(data.data);
+    } catch (err) {
+      setQuoteError(err.message || "Failed to get booking quote.");
+    } finally {
+      setQuoteLoading(false);
+    }
   };
 
   const activeCinema = cinemas.find((c) => c._id === selectedCinema);
@@ -58,50 +67,60 @@ export default function BookingPage() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white">Watch Party Booking</h1>
-        <p className="text-zinc-400 text-sm mt-1">Find the perfect bundle combo for your group</p>
+        <h2 className="text-2xl font-bold text-white">Plan Your Watch Party</h2>
+        <p className="text-zinc-500 text-sm mt-1">Find the minimum number of cinema bundles needed for your group.</p>
       </div>
 
-      {/* Add Cinema Card */}
-      <div className="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden">
+      {/* Add Cinema */}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-zinc-800 flex items-center gap-2">
-          <span className="text-red-500">🎭</span>
-          <h2 className="font-semibold text-zinc-200">Add Cinema</h2>
+          <Building2 className="w-4 h-4 text-red-400" />
+          <h3 className="font-semibold text-zinc-200">Add Cinema</h3>
         </div>
         <form onSubmit={handleCreateCinema} className="p-5 space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <input
-              className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-colors placeholder:text-zinc-500"
-              placeholder="Cinema name"
-              value={cinemaForm.name}
-              onChange={(e) => setCinemaForm({ ...cinemaForm, name: e.target.value })}
-              required
-            />
-            <input
-              className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-colors placeholder:text-zinc-500"
-              placeholder="Bundle sizes (e.g. 2, 5, 10)"
-              value={cinemaForm.bundleSizes}
-              onChange={(e) => setCinemaForm({ ...cinemaForm, bundleSizes: e.target.value })}
-              required
-            />
-          </div>
-          {cinemaError && (
-            <div className="bg-red-950 border border-red-800 rounded-xl px-4 py-2.5 text-red-400 text-sm">
-              {cinemaError}
+            <div>
+              <label className="text-xs text-zinc-500 uppercase tracking-wide mb-1.5 block">Cinema Name</label>
+              <input
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/30 transition-all placeholder:text-zinc-600"
+                placeholder="e.g. IMAX Cineplex"
+                value={cinemaForm.name}
+                onChange={(e) => setCinemaForm({ ...cinemaForm, name: e.target.value })}
+                required
+              />
             </div>
-          )}
-          <button className="w-full sm:w-auto bg-red-600 hover:bg-red-500 active:bg-red-700 px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors">
+            <div>
+              <label className="text-xs text-zinc-500 uppercase tracking-wide mb-1.5 block">Bundle Sizes (comma-separated)</label>
+              <input
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/30 transition-all placeholder:text-zinc-600"
+                placeholder="e.g. 2, 5, 10"
+                value={cinemaForm.bundleSizes}
+                onChange={(e) => setCinemaForm({ ...cinemaForm, bundleSizes: e.target.value })}
+                required
+              />
+            </div>
+          </div>
+          <ErrorMessage message={cinemaError} onDismiss={() => setCinemaError("")} />
+          <button
+            type="submit"
+            disabled={cinemaLoading}
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all"
+          >
+            {cinemaLoading ? <LoadingSpinner size="sm" /> : <Plus className="w-4 h-4" />}
             Add Cinema
           </button>
         </form>
       </div>
 
-      {/* Cinema List */}
+      {/* Cinema Cards */}
       {cinemas.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {cinemas.map((c) => (
-            <div key={c._id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 space-y-2">
-              <p className="font-semibold text-white">{c.name}</p>
+            <div key={c._id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 space-y-2.5">
+              <div className="flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-zinc-500 flex-shrink-0" />
+                <p className="font-semibold text-white truncate">{c.name}</p>
+              </div>
               <div className="flex flex-wrap gap-1.5">
                 {c.bundleSizes.map((s) => (
                   <span key={s} className="bg-zinc-800 border border-zinc-700 text-zinc-400 text-xs px-2.5 py-1 rounded-full">
@@ -114,20 +133,20 @@ export default function BookingPage() {
         </div>
       )}
 
-      {/* Booking Quote Card */}
-      <div className="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden">
+      {/* Booking Quote */}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-zinc-800 flex items-center gap-2">
-          <span className="text-red-500">🎟</span>
-          <h2 className="font-semibold text-zinc-200">Get Booking Quote</h2>
+          <Ticket className="w-4 h-4 text-red-400" />
+          <h3 className="font-semibold text-zinc-200">Get Booking Quote</h3>
         </div>
         <div className="p-5 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-zinc-500 mb-1.5 block uppercase tracking-wide">Cinema</label>
+              <label className="text-xs text-zinc-500 uppercase tracking-wide mb-1.5 block">Cinema</label>
               <select
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-colors"
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/30 transition-all"
                 value={selectedCinema}
-                onChange={(e) => { setSelectedCinema(e.target.value); setResult(null); setError(""); }}
+                onChange={(e) => { setSelectedCinema(e.target.value); setResult(null); setQuoteError(""); }}
               >
                 <option value="">Select a cinema...</option>
                 {cinemas.map((c) => (
@@ -136,74 +155,43 @@ export default function BookingPage() {
               </select>
             </div>
             <div>
-              <label className="text-xs text-zinc-500 mb-1.5 block uppercase tracking-wide">Group Size</label>
+              <label className="text-xs text-zinc-500 uppercase tracking-wide mb-1.5 block">Group Size (1–10,000)</label>
               <input
                 type="number"
                 min="1"
                 max="10000"
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-colors placeholder:text-zinc-500"
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/30 transition-all placeholder:text-zinc-600"
                 placeholder="e.g. 11"
                 value={groupSize}
-                onChange={(e) => { setGroupSize(e.target.value); setResult(null); setError(""); }}
+                onChange={(e) => { setGroupSize(e.target.value); setResult(null); setQuoteError(""); }}
               />
             </div>
           </div>
 
           {activeCinema && (
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-zinc-600 flex items-center gap-1.5">
+              <Ticket className="w-3 h-3" />
               Available bundles: {activeCinema.bundleSizes.map((s) => `${s} seats`).join(", ")}
             </p>
           )}
 
-          {error && (
-            <div className="bg-red-950 border border-red-800 rounded-xl px-4 py-2.5 text-red-400 text-sm">
-              {error}
-            </div>
-          )}
+          <ErrorMessage message={quoteError} onDismiss={() => setQuoteError("")} />
 
           <button
             onClick={handleQuote}
-            disabled={!selectedCinema || !groupSize}
-            className="w-full sm:w-auto bg-red-600 hover:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors"
+            disabled={!selectedCinema || !groupSize || quoteLoading}
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-red-900/20"
           >
-            Get Quote
+            {quoteLoading ? <LoadingSpinner size="sm" /> : <Users className="w-4 h-4" />}
+            {quoteLoading ? "Calculating..." : "Calculate Bundles"}
           </button>
 
-          {/* Result */}
           {result && (
-            <div className={`rounded-2xl border p-5 space-y-3 ${
-              result.possible ? "bg-green-950 border-green-800" : "bg-yellow-950 border-yellow-800"
-            }`}>
-              {!result.possible ? (
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">❌</span>
-                  <div>
-                    <p className="font-semibold text-yellow-300">Not Possible</p>
-                    <p className="text-yellow-500 text-sm">No exact bundle combination exists for {groupSize} seats.</p>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">✅</span>
-                    <div>
-                      <p className="font-semibold text-green-300">
-                        {result.totalBundles} bundle{result.totalBundles !== 1 ? "s" : ""} for {groupSize} seats
-                      </p>
-                      <p className="text-green-600 text-sm">Minimum bundles found</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {result.bundles.map(({ size, count }) => (
-                      <div key={size} className="bg-green-900 border border-green-700 rounded-xl px-4 py-3 text-center min-w-24">
-                        <p className="text-2xl font-bold text-green-300">×{count}</p>
-                        <p className="text-green-500 text-xs mt-0.5">{size}-seat bundle</p>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
+            <BookingResult
+              result={result}
+              groupSize={groupSize}
+              cinemaName={activeCinema?.name}
+            />
           )}
         </div>
       </div>
