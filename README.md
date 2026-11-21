@@ -187,7 +187,7 @@ The app will be available at `http://localhost:3000`.
 
 ## AI Usage Disclosure
 
-I used AI tools during this project mainly to help with generating sample API data — such as creating the 8 MCU movies with their prerequisites and test cinemas — and for assistance with UI components, Express setup, and Mongoose schemas.
+I used Claude (Anthropic) during this project mainly to help with generating sample API data — such as creating the 8 MCU movies with their prerequisites and test cinemas — and for assistance with UI components, Express setup, and Mongoose schemas.
 
 The core logic of the application — DFS-based circular dependency detection, Kahn's algorithm for topological sort, and the bottom-up dynamic programming solution for minimum bundle calculation — was written and understood by me independently.
 
