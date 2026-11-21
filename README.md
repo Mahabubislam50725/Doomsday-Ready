@@ -187,11 +187,11 @@ The app will be available at `http://localhost:3000`.
 
 ## AI Usage Disclosure
 
-During this project, I used Claude AI as supporting development tools to understand technical concepts, explore implementation approaches, troubleshoot errors, and assist with repetitive coding tasks such as Express.js setup, Mongoose schemas, and Next.js UI components.
+I used AI tools during this project mainly to help with generating sample API data — such as creating the 8 MCU movies with their prerequisites and test cinemas — and for assistance with UI components, Express setup, and Mongoose schemas.
 
-I independently worked on the core problem-solving logic, including DFS-based circular dependency detection, Kahn's algorithm for topological sorting, and Dynamic Programming for minimum cinema bundle calculation.
+The core logic of the application — DFS-based circular dependency detection, Kahn's algorithm for topological sort, and the bottom-up dynamic programming solution for minimum bundle calculation — was written and understood by me independently.
 
-I reviewed, modified, tested, and worked to understand the code throughout the development process rather than relying on AI-generated output without verification. The final implementation reflects my development work and understanding of the project.
+All AI-generated code was reviewed, tested, and adapted by me before being included in the project.
 
 ---
 
